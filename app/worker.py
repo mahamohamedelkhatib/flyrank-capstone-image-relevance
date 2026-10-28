@@ -17,7 +17,8 @@ def should_flag(tags: ImageTags) -> bool:
     """Flag when the model is unsure, or when its own tags say the photo is blurry."""
     if tags.confidence < LOW_CONFIDENCE:
         return True
-    text = " ".join(tags.attributes).lower()
+    about_photo = [a.lower() for a in tags.attributes if "background" not in a.lower()]
+    text = " ".join(about_photo)
     return any(word in text for word in BLUR_WORDS)
 
 
