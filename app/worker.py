@@ -1,8 +1,10 @@
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
+from app.costs import log_call
 from app.db import connect
 from app.gemini import call_gemini
 from app.jobs import claim_next, save_failure, save_success
@@ -22,6 +24,21 @@ def should_flag(tags: ImageTags) -> bool:
     return any(word in text for word in BLUR_WORDS)
 
 
+def _log(image_id: int, usage: dict, started: float, status: str, error: str | None) -> None:
+    """Record one Gemini call. Thinking tokens, if any, are billed as output."""
+    output_tokens = usage.get("candidatesTokenCount", 0) + usage.get("thoughtsTokenCount", 0)
+    log_call(
+        image_id=image_id,
+        purpose="vision",
+        model=os.environ["GEMINI_VISION_MODEL"],
+        input_tokens=usage.get("promptTokenCount", 0),
+        output_tokens=output_tokens,
+        latency_ms=int((time.monotonic() - started) * 1000),
+        status=status,
+        error=error,
+    )
+
+
 def process_one() -> str | None:
     """Tag one pending image. Returns a log line, or None if nothing was due."""
     with connect() as conn:
@@ -30,15 +47,19 @@ def process_one() -> str | None:
         return None
 
     image_id, filename, attempts = claimed
+    started = time.monotonic()
+    usage: dict = {}
     try:
-        raw, _usage = call_gemini(str(IMAGE_DIR / filename))
+        raw, usage = call_gemini(str(IMAGE_DIR / filename))
         tags = ImageTags(**json.loads(raw))
     except Exception as e:
         message = f"{type(e).__name__}: {e}"[:500]
+        _log(image_id, usage, started, "error", message)
         with connect() as conn:
             save_failure(conn, image_id, attempts, message)
         return f"{filename}: ERROR attempt {attempts} ({type(e).__name__})"
 
+    _log(image_id, usage, started, "ok", None)
     flagged = should_flag(tags)
     with connect() as conn:
         save_success(conn, image_id, tags, flagged)
