@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from app.post_tags import PostTags
 
 MIN_POST_CONFIDENCE = 0.5
-MIN_SIMILARITY = 0.80  # placeholder: tuned on the labeled posts in Block 9
+MIN_SIMILARITY = 0.78  # tuned on eval/posts.csv: sits in the gap between right matches (>= 0.798) and no-match posts (<= 0.761)
 
 
 @dataclass

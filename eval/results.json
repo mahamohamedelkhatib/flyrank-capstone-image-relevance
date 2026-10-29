@@ -1,0 +1,243 @@
+{
+  "threshold": 0.78,
+  "precision": 1.0,
+  "posts": [
+    {
+      "id": "1",
+      "expected": "fox",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "red fox",
+          "category": "animal",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "fox-05.jpg",
+          "score": 0.896,
+          "subject": "red fox",
+          "why": "The red fox is the exact subject being discussed in the blog post."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "2",
+      "expected": "wolf",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "gray wolf",
+          "category": "animal",
+          "confidence": 1.0
+        },
+        "match": {
+          "filename": "wolf-02.jpg",
+          "score": 0.853,
+          "subject": "gray wolf",
+          "why": "The gray wolf is the specific subject mentioned in the blog post and depicted in the image."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "3",
+      "expected": "dog",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "golden retriever",
+          "category": "animal",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "dog-01.jpg",
+          "score": 0.798,
+          "subject": "golden retriever",
+          "why": "The golden retriever in the image matches the golden retriever topic of the blog post."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "4",
+      "expected": "bear",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "grizzly bear",
+          "category": "animal",
+          "confidence": 1.0
+        },
+        "match": {
+          "filename": "bear-02.jpg",
+          "score": 0.814,
+          "subject": "brown bear",
+          "why": "The grizzly bear is a specific subspecies of the brown bear."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "5",
+      "expected": "deer",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "deer",
+          "category": "animal",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "deer-04.jpg",
+          "score": 0.866,
+          "subject": "fallow deer",
+          "why": "A fallow deer is a specific species of deer, which falls under the general category of deer."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "6",
+      "expected": "car",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "London black cab",
+          "category": "vehicle",
+          "confidence": 1.0
+        },
+        "match": {
+          "filename": "car-01.jpg",
+          "score": 0.903,
+          "subject": "London black cab",
+          "why": "The image depicts a London black cab, which matches the subject of the blog post exactly."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "7",
+      "expected": "food",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "grilled meats",
+          "category": "food",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "food-03.jpg",
+          "score": 0.905,
+          "subject": "Georgian feast with grilled meat and sides",
+          "why": "Grilled meat is the central focus of the blog post and is prominently featured as a dish on the table in the image."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "8",
+      "expected": "mountain",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "mountain range",
+          "category": "landscape",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "mountain-03.jpg",
+          "score": 0.829,
+          "subject": "mountain range",
+          "why": "The image features a scenic view of a mountain range, which directly matches the blog post topic."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "9",
+      "expected": "building",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "brick facade of a European apartment building",
+          "category": "building",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "building-02.jpg",
+          "score": 0.88,
+          "subject": "historic brick apartment building",
+          "why": "The image depicts a historic brick apartment building, which directly corresponds to the blog post's subject of a brick facade on a European apartment building."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
+      }
+    },
+    {
+      "id": "10",
+      "expected": "none",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "orange cat",
+          "category": "animal",
+          "confidence": 1.0
+        },
+        "match": null,
+        "rejected": [],
+        "decision": "no_match",
+        "message": "no confident match: no image passed all the guard rules"
+      }
+    },
+    {
+      "id": "11",
+      "expected": "none",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "tax documents",
+          "category": "other",
+          "confidence": 0.3
+        },
+        "match": null,
+        "rejected": [],
+        "decision": "no_match",
+        "message": "no confident match: the post has no clear visual subject"
+      }
+    },
+    {
+      "id": "12",
+      "expected": "none",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "penguins",
+          "category": "animal",
+          "confidence": 1.0
+        },
+        "match": null,
+        "rejected": [],
+        "decision": "no_match",
+        "message": "no confident match: no image passed all the guard rules"
+      }
+    }
+  ]
+}
