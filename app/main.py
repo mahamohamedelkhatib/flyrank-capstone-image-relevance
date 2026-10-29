@@ -1,7 +1,10 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app import service
+from app.errors import BadInput, NotFound
 from app.db import connect
 
 app = FastAPI(title="Image Relevance and Auto-Tagging")
@@ -73,3 +76,22 @@ def suggestion_detail(suggestion_id: int):
 def review_suggestion(suggestion_id: int, payload: ReviewIn):
     """Approve or reject a suggestion."""
     return service.review_suggestion(suggestion_id, payload.verdict, payload.note)
+
+
+@app.exception_handler(BadInput)
+async def handle_bad_input(request: Request, exc: BadInput):
+    return JSONResponse(status_code=400, content={"error": str(exc)})
+
+
+@app.exception_handler(NotFound)
+async def handle_not_found(request: Request, exc: NotFound):
+    return JSONResponse(status_code=404, content={"error": str(exc)})
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_invalid_input(request: Request, exc: RequestValidationError):
+    problems = [
+        f"{'.'.join(str(p) for p in e['loc'][1:])}: {e['msg']}"
+        for e in exc.errors()
+    ]
+    return JSONResponse(status_code=400, content={"error": "invalid input", "problems": problems})
