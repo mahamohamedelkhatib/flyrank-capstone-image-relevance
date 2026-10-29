@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Query
+from pydantic import BaseModel
 
+from app import service
 from app.db import connect
 
 app = FastAPI(title="Image Relevance and Auto-Tagging")
@@ -37,3 +39,20 @@ def costs(limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)):
             for r in calls
         ],
     }
+
+
+class PostIn(BaseModel):
+    title: str
+    body: str
+
+
+@app.post("/posts", status_code=201)
+def add_post(payload: PostIn):
+    """Add a blog post. It is tagged and embedded once, then stored."""
+    return service.create_post(payload.title, payload.body)
+
+
+@app.get("/posts/{post_id}/images")
+def post_images(post_id: int, refresh: bool = False):
+    """Ranked image suggestions for a post, with the guard's decision and reason for each."""
+    return service.get_suggestions(post_id, refresh)
