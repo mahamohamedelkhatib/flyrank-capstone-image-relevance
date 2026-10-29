@@ -95,3 +95,9 @@ async def handle_invalid_input(request: Request, exc: RequestValidationError):
         for e in exc.errors()
     ]
     return JSONResponse(status_code=400, content={"error": "invalid input", "problems": problems})
+
+
+@app.post("/posts/{post_id}/images/{image_id}/check")
+def check_image(post_id: int, image_id: int):
+    """Test whether one specific image would be accepted for a post, and why."""
+    return service.check_image(post_id, image_id)

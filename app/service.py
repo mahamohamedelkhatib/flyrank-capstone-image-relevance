@@ -2,7 +2,13 @@ import os
 
 import app.guard as guard
 from app import repository
+from app.embed import cosine
+from app.embed import cosine
 from app.engine import find_match
+from app.guard import Verdict, check_basic
+from app.judge import judge_subject
+from app.guard import Verdict, check_basic
+from app.judge import judge_subject
 from app.errors import BadInput, NotFound
 from app.post_tags import PostTags, tag_post
 from app.vectors import embed_logged
@@ -80,3 +86,49 @@ def review_suggestion(suggestion_id: int, verdict: str, note: str | None) -> dic
         raise NotFound(f"suggestion {suggestion_id} does not exist")
     review_id = repository.add_review(suggestion_id, verdict, note)
     return {"review_id": review_id, "suggestion_id": suggestion_id, "verdict": verdict, "note": note}
+
+
+def check_image(post_id: int, image_id: int) -> dict:
+    """Would the guard accept this one image for this post? Nothing is saved."""
+    post = repository.get_post(post_id)
+    if post is None:
+        raise NotFound(f"post {post_id} does not exist")
+    image = repository.get_image(image_id)
+    if image is None:
+        raise NotFound(f"image {image_id} does not exist")
+
+    tags = PostTags(subject=post["subject"], category=post["category"], confidence=post["confidence"])
+    post_vector = repository.get_post_vector(post_id)
+    image_vector = repository.get_image_vector(image_id)
+    similarity = cosine(post_vector, image_vector) if post_vector and image_vector else 0.0
+
+    verdict = check_basic(tags, image, similarity)
+    if verdict.ok:
+        judgement = judge_subject(tags.subject, image["subject"], image["caption"])
+        verdict = (Verdict(True, None, judgement.reason) if judgement.same_subject
+                   else Verdict(False, "subject_mismatch", judgement.reason))
+    return {"post_id": post_id, "image": image["filename"], "similarity": round(similarity, 3),
+            "accepted": verdict.ok, "rule": verdict.rule, "reason": verdict.reason}
+
+
+def check_image(post_id: int, image_id: int) -> dict:
+    """Would the guard accept this one image for this post? Nothing is saved."""
+    post = repository.get_post(post_id)
+    if post is None:
+        raise NotFound(f"post {post_id} does not exist")
+    image = repository.get_image(image_id)
+    if image is None:
+        raise NotFound(f"image {image_id} does not exist")
+
+    tags = PostTags(subject=post["subject"], category=post["category"], confidence=post["confidence"])
+    post_vector = repository.get_post_vector(post_id)
+    image_vector = repository.get_image_vector(image_id)
+    similarity = cosine(post_vector, image_vector) if post_vector and image_vector else 0.0
+
+    verdict = check_basic(tags, image, similarity)
+    if verdict.ok:
+        judgement = judge_subject(tags.subject, image["subject"], image["caption"])
+        verdict = (Verdict(True, None, judgement.reason) if judgement.same_subject
+                   else Verdict(False, "subject_mismatch", judgement.reason))
+    return {"post_id": post_id, "image": image["filename"], "similarity": round(similarity, 3),
+            "accepted": verdict.ok, "rule": verdict.rule, "reason": verdict.reason}
