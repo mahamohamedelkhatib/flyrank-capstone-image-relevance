@@ -42,6 +42,7 @@ The guard checks each candidate in this order and rejects it with a reason if it
 If no candidate passes, the system answers "no confident match" and explains why. I will choose the thresholds using my own labeled eval set, not by guessing.
 
 ## API endpoints
+- POST /posts: add a blog post
 - POST /jobs/process: start the background job that tags images and embeds posts
 - GET /jobs/{id}: see the job progress
 - GET /posts/{id}/images: get ranked image suggestions for a post
@@ -57,5 +58,3 @@ I keep the code in three layers: the API routes (HTTP), the logic (pipeline, mat
 
 ## One non-goal
 I am not building an image search engine or a frontend. Review happens through API endpoints and a table.
-EOF
-cat docs/design.md | head -8
