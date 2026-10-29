@@ -56,3 +56,20 @@ def add_post(payload: PostIn):
 def post_images(post_id: int, refresh: bool = False):
     """Ranked image suggestions for a post, with the guard's decision and reason for each."""
     return service.get_suggestions(post_id, refresh)
+
+
+class ReviewIn(BaseModel):
+    verdict: str
+    note: str | None = None
+
+
+@app.get("/suggestions/{suggestion_id}")
+def suggestion_detail(suggestion_id: int):
+    """Why an image was selected or refused: score, rule, reason, image tags and reviews."""
+    return service.get_suggestion(suggestion_id)
+
+
+@app.post("/suggestions/{suggestion_id}/review", status_code=201)
+def review_suggestion(suggestion_id: int, payload: ReviewIn):
+    """Approve or reject a suggestion."""
+    return service.review_suggestion(suggestion_id, payload.verdict, payload.note)

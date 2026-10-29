@@ -68,3 +68,40 @@ def list_suggestions(post_id: int) -> list[dict]:
         ).fetchall()
     keys = ("id", "rank", "filename", "score", "decision", "rule", "reason", "review")
     return [dict(zip(keys, row)) for row in rows]
+
+
+def get_suggestion(suggestion_id: int) -> dict | None:
+    """One suggestion with the image's tags and all human reviews, for inspection."""
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT s.id, s.post_id, s.rank, s.score, s.decision, s.rule, s.reason,
+                   i.id, i.filename, i.status, i.subject, i.category, i.caption, i.confidence
+            FROM suggestions s JOIN images i ON i.id = s.image_id
+            WHERE s.id = %s
+            """,
+            (suggestion_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        tags = [r[0] for r in conn.execute(
+            "SELECT tag FROM tags WHERE image_id = %s ORDER BY tag", (row[7],))]
+        reviews = conn.execute(
+            "SELECT id, verdict, note, created_at FROM reviews WHERE suggestion_id = %s ORDER BY id",
+            (suggestion_id,),
+        ).fetchall()
+    return {
+        "id": row[0], "post_id": row[1], "rank": row[2], "score": row[3],
+        "decision": row[4], "rule": row[5], "reason": row[6],
+        "image": {"id": row[7], "filename": row[8], "status": row[9], "subject": row[10],
+                  "category": row[11], "caption": row[12], "confidence": row[13], "tags": tags},
+        "reviews": [{"id": r[0], "verdict": r[1], "note": r[2], "created_at": r[3]} for r in reviews],
+    }
+
+
+def add_review(suggestion_id: int, verdict: str, note: str | None) -> int:
+    with connect() as conn:
+        return conn.execute(
+            "INSERT INTO reviews (suggestion_id, verdict, note) VALUES (%s, %s, %s) RETURNING id",
+            (suggestion_id, verdict, note),
+        ).fetchone()[0]

@@ -60,3 +60,23 @@ def get_suggestions(post_id: int, refresh: bool = False) -> dict:
         "message": message,
         "suggestions": stored,
     }
+
+
+def get_suggestion(suggestion_id: int) -> dict:
+    """Why an image was selected or refused, with its tags and any human reviews."""
+    suggestion = repository.get_suggestion(suggestion_id)
+    if suggestion is None:
+        raise NotFound(f"suggestion {suggestion_id} does not exist")
+    return suggestion
+
+
+def review_suggestion(suggestion_id: int, verdict: str, note: str | None) -> dict:
+    """Record a human decision on a suggestion."""
+    if verdict not in ("approved", "rejected"):
+        raise BadInput("verdict must be 'approved' or 'rejected'")
+    if note is not None and len(note) > 1000:
+        raise BadInput("note is limited to 1000 characters")
+    if repository.get_suggestion(suggestion_id) is None:
+        raise NotFound(f"suggestion {suggestion_id} does not exist")
+    review_id = repository.add_review(suggestion_id, verdict, note)
+    return {"review_id": review_id, "suggestion_id": suggestion_id, "verdict": verdict, "note": note}
