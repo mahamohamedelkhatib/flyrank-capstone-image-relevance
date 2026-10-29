@@ -141,3 +141,62 @@ def get_image_vector(image_id: int) -> list[float] | None:
     with connect() as conn:
         row = conn.execute("SELECT vector FROM image_vectors WHERE image_id = %s", (image_id,)).fetchone()
     return row[0] if row else None
+
+
+def count_pending_images() -> int:
+    with connect() as conn:
+        return conn.execute("SELECT count(*) FROM images WHERE status = 'pending'").fetchone()[0]
+
+
+def has_running_job() -> bool:
+    """A job still marked running after an hour is treated as stale (the server was restarted)."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT EXISTS (SELECT 1 FROM jobs WHERE status = 'running' "
+            "AND created_at > now() - interval '1 hour')"
+        ).fetchone()[0]
+
+
+def create_job(kind: str, total: int) -> int:
+    with connect() as conn:
+        return conn.execute(
+            "INSERT INTO jobs (kind, status, total) VALUES (%s, 'running', %s) RETURNING id",
+            (kind, total),
+        ).fetchone()[0]
+
+
+def get_job(job_id: int) -> dict | None:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT id, kind, status, total, done, failed, error, created_at, finished_at "
+            "FROM jobs WHERE id = %s",
+            (job_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    keys = ("id", "kind", "status", "total", "done", "failed", "error", "created_at", "finished_at")
+    return dict(zip(keys, row))
+
+
+def refresh_job_progress(job_id: int) -> None:
+    """Count the images this job has finished or given up on since it started."""
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE jobs j SET
+                done = (SELECT count(*) FROM images i
+                        WHERE i.status IN ('done', 'flagged') AND i.updated_at >= j.created_at),
+                failed = (SELECT count(*) FROM images i
+                          WHERE i.status = 'failed' AND i.updated_at >= j.created_at)
+            WHERE j.id = %s
+            """,
+            (job_id,),
+        )
+
+
+def finish_job(job_id: int, error: str | None) -> None:
+    with connect() as conn:
+        conn.execute(
+            "UPDATE jobs SET status = %s, error = %s, finished_at = now() WHERE id = %s",
+            ("failed" if error else "done", error, job_id),
+        )

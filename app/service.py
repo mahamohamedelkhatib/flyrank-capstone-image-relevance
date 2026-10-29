@@ -9,7 +9,7 @@ from app.guard import Verdict, check_basic
 from app.judge import judge_subject
 from app.guard import Verdict, check_basic
 from app.judge import judge_subject
-from app.errors import BadInput, NotFound
+from app.errors import BadInput, Conflict, NotFound
 from app.post_tags import PostTags, tag_post
 from app.vectors import embed_logged
 
@@ -132,3 +132,17 @@ def check_image(post_id: int, image_id: int) -> dict:
                    else Verdict(False, "subject_mismatch", judgement.reason))
     return {"post_id": post_id, "image": image["filename"], "similarity": round(similarity, 3),
             "accepted": verdict.ok, "rule": verdict.rule, "reason": verdict.reason}
+
+
+def start_job() -> int:
+    """Create a job row for the pending images. Only one job may run at a time."""
+    if repository.has_running_job():
+        raise Conflict("a job is already running")
+    return repository.create_job("process", repository.count_pending_images())
+
+
+def get_job(job_id: int) -> dict:
+    job = repository.get_job(job_id)
+    if job is None:
+        raise NotFound(f"job {job_id} does not exist")
+    return job

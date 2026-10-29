@@ -4,3 +4,7 @@ class NotFound(Exception):
 
 class BadInput(Exception):
     """The caller sent something we cannot accept (becomes a 400)."""
+
+
+class Conflict(Exception):
+    """The request clashes with the current state, like a job already running (becomes a 409)."""

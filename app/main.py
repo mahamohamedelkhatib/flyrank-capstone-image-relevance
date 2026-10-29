@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Query, Request
+from fastapi import BackgroundTasks, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app import service
-from app.errors import BadInput, NotFound
+from app import runner, service
+from app.errors import BadInput, Conflict, NotFound
 from app.db import connect
 
 app = FastAPI(title="Image Relevance and Auto-Tagging")
@@ -101,3 +101,22 @@ async def handle_invalid_input(request: Request, exc: RequestValidationError):
 def check_image(post_id: int, image_id: int):
     """Test whether one specific image would be accepted for a post, and why."""
     return service.check_image(post_id, image_id)
+
+
+@app.post("/jobs/process", status_code=202)
+def start_job(background_tasks: BackgroundTasks):
+    """Start the background job that tags pending images and embeds the new ones."""
+    job_id = service.start_job()
+    background_tasks.add_task(runner.run_job, job_id)
+    return {"job_id": job_id, "status": "running"}
+
+
+@app.get("/jobs/{job_id}")
+def job_status(job_id: int):
+    """Progress of a background job."""
+    return service.get_job(job_id)
+
+
+@app.exception_handler(Conflict)
+async def handle_conflict(request: Request, exc: Conflict):
+    return JSONResponse(status_code=409, content={"error": str(exc)})
