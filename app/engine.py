@@ -2,26 +2,25 @@ import app.guard as guard
 from app.db import connect
 from app.guard import Verdict, check_basic
 from app.judge import judge_subject
-from app.matching import rank
-from app.post_tags import tag_post
+from app.matching import rank_vector
+from app.post_tags import PostTags, tag_post
+from app.vectors import embed_logged
 
 MAX_JUDGE_CALLS = 3
 
 
-def match_post(text: str, include: tuple = (), exclude: tuple = ()) -> dict:
-    """Find the best image for a post, or say there is no confident match."""
-    post = tag_post(text)
-    base = {"post": post.model_dump(), "match": None, "rejected": []}
-
+def find_match(post: PostTags, query: list[float], include: tuple = (), exclude: tuple = ()) -> dict:
+    """Run the guard for a post that is already tagged and embedded."""
+    result = {"match": None, "rejected": []}
     if post.confidence < guard.MIN_POST_CONFIDENCE:
-        return {**base, "decision": "no_match",
+        return {**result, "decision": "no_match",
                 "message": "no confident match: the post has no clear visual subject"}
 
     with connect() as conn:
         captions = dict(conn.execute("SELECT filename, caption FROM images").fetchall())
 
     judged = 0
-    for score, filename, subject, category, status in rank(text, limit=1000):
+    for score, filename, subject, category, status in rank_vector(query, limit=1000):
         if include and not filename.startswith(include):
             continue
         if exclude and filename.startswith(exclude):
@@ -36,15 +35,22 @@ def match_post(text: str, include: tuple = (), exclude: tuple = ()) -> dict:
             judged += 1
             judgement = judge_subject(post.subject, subject, captions[filename])
             if judgement.same_subject:
-                return {**base, "decision": "match", "message": "match found",
+                return {**result, "decision": "match", "message": "match found",
                         "match": {"filename": filename, "score": round(score, 3),
                                   "subject": subject, "why": judgement.reason}}
             verdict = Verdict(False, "subject_mismatch", judgement.reason)
-        base["rejected"].append({"filename": filename, "score": round(score, 3),
-                                 "rule": verdict.rule, "reason": verdict.reason})
+        result["rejected"].append({"filename": filename, "score": round(score, 3),
+                                   "rule": verdict.rule, "reason": verdict.reason})
 
-    return {**base, "decision": "no_match",
+    return {**result, "decision": "no_match",
             "message": "no confident match: no image passed all the guard rules"}
+
+
+def match_post(text: str, include: tuple = (), exclude: tuple = ()) -> dict:
+    """Tag the post, embed it, and find the best image. Used by the eval script."""
+    post = tag_post(text)
+    query = [] if post.confidence < guard.MIN_POST_CONFIDENCE else embed_logged(text)
+    return {"post": post.model_dump(), **find_match(post, query, include, exclude)}
 
 
 def show(result: dict) -> None:

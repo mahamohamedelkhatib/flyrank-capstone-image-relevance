@@ -5,9 +5,8 @@ from app.embed import cosine
 from app.vectors import embed_logged
 
 
-def rank(post_text: str, limit: int = 5) -> list[tuple]:
-    """Return the best-matching images as (score, filename, subject, category, status)."""
-    query = embed_logged(post_text)
+def rank_vector(query: list[float], limit: int = 5) -> list[tuple]:
+    """Rank images by similarity to a vector: (score, filename, subject, category, status)."""
     with connect() as conn:
         rows = conn.execute(
             """
@@ -21,6 +20,11 @@ def rank(post_text: str, limit: int = 5) -> list[tuple]:
     ]
     scored.sort(reverse=True)
     return scored[:limit]
+
+
+def rank(post_text: str, limit: int = 5) -> list[tuple]:
+    """Embed the text, then rank images against it."""
+    return rank_vector(embed_logged(post_text), limit)
 
 
 if __name__ == "__main__":
