@@ -406,3 +406,75 @@ image statuses: {'done': 39, 'flagged': 3}
 (3 rows)
 
 ```
+
+### 14. Secrets are clean
+
+The only tracked env file is .env.example. No tracked file and no commit in the git history contains a Google API key pattern, .env is in .gitignore, the key is sent in a header and never in a URL, and no error text in the AI call log contains a key.
+
+```
+tracked files whose name contains .env:
+.env.example
+
+tracked files containing a Google API key pattern (names only, expect none):
+(end of list)
+
+commits in all history that added or removed a key pattern (expect 0):
+       0
+
+.gitignore rules for .env:
+153:.env
+154:.envrc
+222:.env
+
+how the key is sent (code only):
+app/gemini.py:28:    key = os.environ["GEMINI_API_KEY"]
+app/gemini.py:42:        headers={"x-goog-api-key": key},
+app/embed.py:16:    key = os.environ["GEMINI_API_KEY"]
+app/embed.py:25:        headers={"x-goog-api-key": key},
+
+AI call log rows whose error text contains a key (expect 0):
+0
+```
+
+### 15. Required files are present
+
+README, capstone.yaml, EVIDENCE.md, BUILDLOG.md, .env.example and the MIT LICENSE are in the repository root, together with the Dockerfile and docker-compose.yml that start the system.
+
+```
+.env.example
+BUILDLOG.md
+Dockerfile
+EVIDENCE.md
+LICENSE
+README.md
+capstone.yaml
+docker-compose.yml
+
+--- capstone.yaml
+run: docker compose up -d --build
+seed: docker compose run --rm api python -m app.seed
+test: docker compose run --rm api pytest -q
+base_url: http://127.0.0.1:8000
+endpoints:
+  - GET /costs
+  - POST /posts
+  - GET /posts/{post_id}/images
+  - POST /posts/{post_id}/images/{image_id}/check
+  - GET /suggestions/{suggestion_id}
+  - POST /suggestions/{suggestion_id}/review
+  - POST /jobs/process
+  - GET /jobs/{job_id}
+
+--- .env.example (values hidden here)
+GEMINI_API_KEY=...
+GEMINI_VISION_MODEL=...
+GEMINI_EMBED_MODEL=...
+DATABASE_URL=...
+PRICE_INPUT_PER_M=...
+PRICE_OUTPUT_PER_M=...
+PRICE_EMBED_PER_M=...
+MAX_BUDGET_USD=...
+
+--- LICENSE first line
+MIT License
+```

@@ -127,6 +127,7 @@ Prices are set in `.env` (`PRICE_INPUT_PER_M`, `PRICE_OUTPUT_PER_M`, `PRICE_EMBE
 - **Ranking is done in Python.** Vectors are stored as arrays and compared one by one. That is fine for hundreds of images but not for millions. A vector index such as pgvector would be the next step.
 - **Live API calls.** Tagging, embedding and judging call Gemini, so `POST /posts` takes a few seconds. Model names change: `gemini-2.5-flash` stopped working for new accounts during this project, so models are set in `.env`.
 - **The background job is simple.** It runs inside the API process. A restart during a job can leave an image stuck as `processing`, and a job still marked running after an hour is treated as stale.
+- **No failure alert.** An image that fails 3 times is marked `failed`, and its error is saved and shown in `GET /costs`, but nobody is notified.
 - **Narrow scope.** Only JPG images, no login, and no frontend. Review happens through the API.
 - **The tests are small.** The 18 tests cover the guard rules, bad input and the budget limit. The Gemini calls themselves are checked by the evaluation script and not by unit tests. The proof is in `EVIDENCE.md`.
 - **Costs are estimates**, as described above.
