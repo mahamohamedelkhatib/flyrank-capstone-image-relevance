@@ -25,6 +25,7 @@ How I used AI on this capstone, written honestly. I built it over several days (
 
 - Ran every step in my own terminal, read the output, and pushed to GitHub as I went.
 - Chose to build it step by step with pastes, so I could learn the system.
+- Did my own research while learning, so the project was not only Claude's steps. I read up on the Gemini API documentation, the Pexels license, Docker and Postgres, because I wanted to understand these parts myself.
 - Questioned outputs that looked wrong (for example, an ERROR line in a batch that later succeeded).
 - Ran a clean-room test from a fresh clone with an empty database, which is how bug 6 was found.
 
