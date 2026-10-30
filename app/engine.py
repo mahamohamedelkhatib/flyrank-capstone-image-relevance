@@ -7,6 +7,7 @@ from app.post_tags import PostTags, tag_post
 from app.vectors import embed_logged
 
 MAX_JUDGE_CALLS = 3
+MAX_EXPLAINED_BELOW = 3  # closest candidates below the threshold that get a written reason
 
 
 def find_match(post: PostTags, query: list[float], include: tuple = (), exclude: tuple = ()) -> dict:
@@ -20,14 +21,23 @@ def find_match(post: PostTags, query: list[float], include: tuple = (), exclude:
         captions = dict(conn.execute("SELECT filename, caption FROM images").fetchall())
 
     judged = 0
+    below = 0
     for score, filename, subject, category, status in rank_vector(query, limit=1000):
         if include and not filename.startswith(include):
             continue
         if exclude and filename.startswith(exclude):
             continue
-        if score < guard.MIN_SIMILARITY:
-            break  # everything after this is even less similar
         image = {"filename": filename, "subject": subject, "category": category, "status": status}
+        if score < guard.MIN_SIMILARITY:
+            # Everything after this is even less similar. Explain the closest few, then stop,
+            # so that "no confident match" always comes with reasons.
+            if below >= MAX_EXPLAINED_BELOW:
+                break
+            below += 1
+            verdict = check_basic(post, image, score)
+            result["rejected"].append({"filename": filename, "score": round(score, 3),
+                                       "rule": verdict.rule, "reason": verdict.reason})
+            continue
         verdict = check_basic(post, image, score)
         if verdict.ok:
             if judged >= MAX_JUDGE_CALLS:
