@@ -51,28 +51,33 @@ The code has three layers. Routes are in `app/main.py`. The logic is in `service
 
 ## How to run
 
-You need Python 3.12, Docker and a Gemini API key.
+You need Docker and a Gemini API key. Nothing else.
 
 ```
 git clone https://github.com/mahamohamedelkhatib/flyrank-capstone-image-relevance.git
 cd flyrank-capstone-image-relevance
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # then put your Gemini key in .env
-docker compose up -d        # creates all tables on a fresh database
+cp .env.example .env                              # then put your Gemini key in .env
+docker compose up -d --build                      # starts Postgres (tables come from db/migrations) and the API
+docker compose run --rm api python -m app.seed    # adds the 42 photos, tags them with Gemini, embeds them
 ```
 
-The photos are not in the repo because of their licenses. Put your own images in `data/images/`, named like `fox-01.jpg`. `data/corpus.csv` lists the 42 Pexels photos I used, with the source and license of each.
+The API is then at http://127.0.0.1:8000 (interactive docs at `/docs`). Seeding takes a few minutes and costs about one cent. It is safe to run again, because it only does the work that is missing.
+
+The 42 photos are in `data/images/`. I resized them to 800 px on the long side to keep the repo small (13 MB became 4.7 MB). `data/corpus.csv` lists the Pexels source and license of each one.
+
+Other commands:
 
 ```
-python3 -m app.ingest       # add the images as pending rows
-python3 -m app.worker       # tag every pending image with Gemini
-python3 -m app.vectors      # embed the tagged images
-uvicorn app.main:app        # API docs at http://127.0.0.1:8000/docs
-python3 -m app.evaluate     # run the evaluation on eval/posts.csv
-python3 -m app.cost_report  # totals from the AI call log
+docker compose run --rm api python -m app.evaluate     # evaluation on eval/posts.csv, writes eval/results.json
+docker compose run --rm api python -m app.cost_report  # totals from the AI call log
+docker compose run --rm api pytest -q                  # the test suite
 ```
+
+The spending limit is `MAX_BUDGET_USD` in `.env`. When the total reaches it, no new Gemini call is made.
+
+## Tests
+
+There are 18 tests. 8 cover the guard rules (`tests/test_guard.py`). 10 cover the API: bad input must give a clean 400 and never a 500, and the budget limit must stop calls (`tests/test_api.py`). They run without calling Gemini.
 
 ## API
 
@@ -87,18 +92,19 @@ python3 -m app.cost_report  # totals from the AI call log
 | `GET /jobs/{id}` | Progress of a job. |
 | `GET /costs` | Every AI call with tokens, cost and errors. |
 
-Bad input returns 400, a missing item returns 404, and starting a second job while one is running returns 409.
+Bad input returns 400, a missing item returns 404, starting a second job while one is running returns 409, and reaching the budget limit returns 402.
 
 ## Results
 
-I wrote 12 posts in `eval/posts.csv`: 9 that have a matching image and 3 that should get "no confident match" (a cat, penguins and a tax post). A post counts as correct when the top match is an image of the right kind, or when the system correctly says there is no match.
+I wrote 13 posts in `eval/posts.csv`: 10 that have a matching image and 3 that should get "no confident match" (a cat, penguins and a tax post). Post 13 says "Vulpes vulpes" instead of "red fox", to test that matching works on meaning and not only on the same words. A post counts as correct when the top match is an image of the right kind, or when the system correctly says there is no match.
 
-| Similarity threshold | Correct | Top-1 precision |
-| --- | --- | --- |
-| 0.80 (first guess) | 11 of 12 | 0.92 |
-| 0.78 (tuned) | 12 of 12 | 1.00 |
+| Run | Threshold | Correct | Top-1 precision |
+| --- | --- | --- | --- |
+| First guess, 12 posts | 0.80 | 11 of 12 | 0.92 |
+| Tuned, 12 posts | 0.78 | 12 of 12 | 1.00 |
+| Final, 13 posts, fresh clone and empty database | 0.78 | 13 of 13 | 1.00 |
 
-At 0.80 the dog post failed, because its best image scored 0.798, just under the threshold. Every correct match scored 0.798 or higher, and every no-match post scored 0.761 or lower, so I put the threshold at 0.78, inside that gap. The per-post output is in `eval/results.json`.
+`python3 -m app.evaluate` prints this last number. At 0.80 the dog post failed, because its best image scored 0.798, just under the threshold. In the first measurement every correct match scored 0.798 or higher and the best image of every no-match post scored 0.761 or lower, so I put the threshold at 0.78, inside that gap. In the final run, with the resized photos, the weakest correct match was the dog post at 0.801, and the "Vulpes vulpes" post matched a fox photo at 0.833. The per-post output is in `eval/results.json`.
 
 Similarity alone cannot tell a fox from a wolf. For a fox post the first wolf image scored 0.817, only about 0.03 below the weakest fox image. That is why the guard needs a subject check and not only a score.
 
@@ -106,23 +112,25 @@ Blurry photos: Gemini first gave a blurry photo a confidence of 0.95, so its own
 
 ## Cost
 
-Every Gemini call is saved in the `ai_calls` table with its tokens, estimated cost, time and any error, and `GET /costs` shows them. On 29 October 2026 the whole project had cost about $0.012: 46 vision calls ($0.0093), 61 text calls ($0.0025) and 82 embedding calls ($0.0004). That includes tagging all 42 images and the evaluation runs. Run `python3 -m app.cost_report` for the current total.
+Every Gemini call is saved in the `ai_calls` table with its tokens, estimated cost, time and any error, and `GET /costs` shows them. On 30 October 2026 the project database had 204 logged calls (200 ok, 4 errors that were retried) with an estimated cost of about $0.013: 48 vision calls ($0.0097), 71 text calls ($0.0029) and 85 embedding calls ($0.0004). That covers tagging all 42 images and every evaluation run on this database. A full seed from an empty database costs about one cent. Run `python3 -m app.cost_report` for the current total.
+
+Budget guard: `MAX_BUDGET_USD` in `.env` is a spending limit. Before each Gemini call the total from `ai_calls` is checked, and when it has reached the limit the call is not made and the API returns 402.
 
 Prices are set in `.env` (`PRICE_INPUT_PER_M`, `PRICE_OUTPUT_PER_M`, `PRICE_EMBED_PER_M`) and come from a third-party price site, so the costs are estimates. Gemini does not report tokens for embeddings, so those are estimated as characters divided by 4.
 
 ## Limitations
 
-- **Small data.** There are 42 photos from one source (Pexels) and 12 evaluation posts. I tuned the threshold on the same 12 posts, and the gap it sits in is only about 0.04 wide (0.761 to 0.798), so the 1.00 precision is optimistic. A separate held-out set of posts is the next step.
+- **Small data.** There are 42 photos from one source (Pexels) and 13 evaluation posts. I tuned the threshold on the first 12 of them (the 13th was added afterwards), and the gap it sits in is only about 0.04 wide (0.761 to 0.798, measured on the original photos), so the 1.00 precision is optimistic. A separate held-out set of posts is the next step.
 - **The subject check looks at only 3 images.** The judge runs on at most the first 3 images that pass rules 1 to 3. If the right image ranks behind three wrong ones, it is missed.
-- **Category names are broad.** Fox and wolf are both "animal", so a wolf for a fox post passes the category rule and is rejected by the subject rule (reason: distinct species). The category rule catches things like a car for a fox post.
+- **Category names are broad.** Fox and wolf are both "animal", so a wolf for a fox post passes the category rule and is rejected by the subject rule. Its reason starts with "category mismatch: the post is about ..." and then gives the judge's explanation. The category rule catches things like a car for a fox post.
 - **The subject judge is a language model.** It can be wrong or change its wording between runs, so its reason is saved for a person to check.
 - **Ranking is done in Python.** Vectors are stored as arrays and compared one by one. That is fine for hundreds of images but not for millions. A vector index such as pgvector would be the next step.
 - **Live API calls.** Tagging, embedding and judging call Gemini, so `POST /posts` takes a few seconds. Model names change: `gemini-2.5-flash` stopped working for new accounts during this project, so models are set in `.env`.
 - **The background job is simple.** It runs inside the API process. A restart during a job can leave an image stuck as `processing`, and a job still marked running after an hour is treated as stale.
 - **Narrow scope.** Only JPG images, no login, and no frontend. Review happens through the API.
-- **No automated test suite.** I checked each part with scripts and the evaluation script, and the proof is in `EVIDENCE.md`.
+- **The tests are small.** The 18 tests cover the guard rules, bad input and the budget limit. The Gemini calls themselves are checked by the evaluation script and not by unit tests. The proof is in `EVIDENCE.md`.
 - **Costs are estimates**, as described above.
 
 ## Credits and licenses
 
-The photos come from Pexels (Pexels License). The source of each one is in `data/corpus.csv`. The code is under the MIT license (see `LICENSE`). I used AI help while building this project, and `BUILDLOG.md` says honestly where.
+The photos come from Pexels (Pexels License). The source of each one is in `data/corpus.csv`. I resized them to 800 px on the long side. The code is under the MIT license (see `LICENSE`). I used AI help while building this project, and `BUILDLOG.md` says honestly where.
