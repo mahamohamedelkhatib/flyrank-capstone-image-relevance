@@ -10,13 +10,13 @@
         "post": {
           "subject": "red fox",
           "category": "animal",
-          "confidence": 0.95
+          "confidence": 1.0
         },
         "match": {
           "filename": "fox-05.jpg",
-          "score": 0.896,
+          "score": 0.9,
           "subject": "red fox",
-          "why": "The red fox is the exact subject being discussed in the blog post."
+          "why": "The blog post and the image both feature a red fox."
         },
         "rejected": [],
         "decision": "match",
@@ -35,9 +35,9 @@
         },
         "match": {
           "filename": "wolf-02.jpg",
-          "score": 0.853,
+          "score": 0.851,
           "subject": "gray wolf",
-          "why": "The gray wolf is the specific subject mentioned in the blog post and depicted in the image."
+          "why": "The gray wolf is the specific subject mentioned in the blog post."
         },
         "rejected": [],
         "decision": "match",
@@ -56,9 +56,9 @@
         },
         "match": {
           "filename": "dog-01.jpg",
-          "score": 0.798,
+          "score": 0.801,
           "subject": "golden retriever",
-          "why": "The golden retriever in the image matches the golden retriever topic of the blog post."
+          "why": "The image features a golden retriever, which is the specific subject of the blog post."
         },
         "rejected": [],
         "decision": "match",
@@ -77,9 +77,9 @@
         },
         "match": {
           "filename": "bear-02.jpg",
-          "score": 0.814,
+          "score": 0.815,
           "subject": "brown bear",
-          "why": "The grizzly bear is a specific subspecies of the brown bear."
+          "why": "A grizzly bear is a specific subspecies of the brown bear."
         },
         "rejected": [],
         "decision": "match",
@@ -92,15 +92,15 @@
       "correct": true,
       "result": {
         "post": {
-          "subject": "deer",
+          "subject": "herd of deer",
           "category": "animal",
           "confidence": 0.95
         },
         "match": {
           "filename": "deer-04.jpg",
-          "score": 0.866,
+          "score": 0.859,
           "subject": "fallow deer",
-          "why": "A fallow deer is a specific species of deer, which falls under the general category of deer."
+          "why": "Fallow deer are a specific type of deer, which aligns with the general subject of a herd of deer."
         },
         "rejected": [],
         "decision": "match",
@@ -115,13 +115,13 @@
         "post": {
           "subject": "London black cab",
           "category": "vehicle",
-          "confidence": 1.0
+          "confidence": 0.95
         },
         "match": {
           "filename": "car-01.jpg",
-          "score": 0.903,
-          "subject": "London black cab",
-          "why": "The image depicts a London black cab, which matches the subject of the blog post exactly."
+          "score": 0.885,
+          "subject": "London taxi",
+          "why": "A London black cab is a specific type of London taxi, making the subjects identical."
         },
         "rejected": [],
         "decision": "match",
@@ -134,15 +134,15 @@
       "correct": true,
       "result": {
         "post": {
-          "subject": "grilled meats",
+          "subject": "grilled meats and shared dishes",
           "category": "food",
           "confidence": 0.95
         },
         "match": {
           "filename": "food-03.jpg",
-          "score": 0.905,
-          "subject": "Georgian feast with grilled meat and sides",
-          "why": "Grilled meat is the central focus of the blog post and is prominently featured as a dish on the table in the image."
+          "score": 0.9,
+          "subject": "a table full of various dishes",
+          "why": "The image directly depicts the grilled meats and shared dishes described in the blog post."
         },
         "rejected": [],
         "decision": "match",
@@ -161,9 +161,9 @@
         },
         "match": {
           "filename": "mountain-03.jpg",
-          "score": 0.829,
+          "score": 0.817,
           "subject": "mountain range",
-          "why": "The image features a scenic view of a mountain range, which directly matches the blog post topic."
+          "why": "The image directly depicts a mountain range, which is the exact subject of the blog post."
         },
         "rejected": [],
         "decision": "match",
@@ -176,15 +176,15 @@
       "correct": true,
       "result": {
         "post": {
-          "subject": "brick facade of a European apartment building",
+          "subject": "brick apartment building facade",
           "category": "building",
           "confidence": 0.95
         },
         "match": {
-          "filename": "building-02.jpg",
-          "score": 0.88,
-          "subject": "historic brick apartment building",
-          "why": "The image depicts a historic brick apartment building, which directly corresponds to the blog post's subject of a brick facade on a European apartment building."
+          "filename": "building-01.jpg",
+          "score": 0.873,
+          "subject": "historic European-style residential buildings",
+          "why": "Historic European-style residential buildings are a specific type of brick apartment building facade."
         },
         "rejected": [],
         "decision": "match",
@@ -213,7 +213,7 @@
       "correct": true,
       "result": {
         "post": {
-          "subject": "tax documents",
+          "subject": "tax documents or business financial paperwork",
           "category": "other",
           "confidence": 0.3
         },
@@ -237,6 +237,27 @@
         "rejected": [],
         "decision": "no_match",
         "message": "no confident match: no image passed all the guard rules"
+      }
+    },
+    {
+      "id": "13",
+      "expected": "fox",
+      "correct": true,
+      "result": {
+        "post": {
+          "subject": "red fox",
+          "category": "animal",
+          "confidence": 0.95
+        },
+        "match": {
+          "filename": "fox-01.jpg",
+          "score": 0.833,
+          "subject": "red fox",
+          "why": "The image depicts a red fox, which is the exact subject of the blog post."
+        },
+        "rejected": [],
+        "decision": "match",
+        "message": "match found"
       }
     }
   ]
