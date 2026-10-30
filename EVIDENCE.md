@@ -284,3 +284,125 @@ message: no confident match: no image passed all the guard rules
   deer-01.jpg  score 0.739  rejected  rule=low_similarity
      reason: similarity 0.74 is below 0.78
 ```
+
+### 9. Database models with indexes
+
+Five migration files create the tables for images, tags, embeddings (image_vectors, post_vectors), posts, suggestions, reviews (approvals and rejections), ai_calls and jobs, and the indexes on them. A fresh Docker database is created from these files by itself.
+
+```
+001_init.sql
+002_ai_calls.sql
+003_vectors_posts.sql
+004_text_purpose.sql
+005_review.sql
+             List of relations
+ Schema |     Name      | Type  |  Owner   
+--------+---------------+-------+----------
+ public | ai_calls      | table | capstone
+ public | image_vectors | table | capstone
+ public | images        | table | capstone
+ public | jobs          | table | capstone
+ public | post_vectors  | table | capstone
+ public | posts         | table | capstone
+ public | reviews       | table | capstone
+ public | suggestions   | table | capstone
+ public | tags          | table | capstone
+(9 rows)
+
+                              List of relations
+ Schema |               Name               | Type  |  Owner   |     Table     
+--------+----------------------------------+-------+----------+---------------
+ public | ai_calls_pkey                    | index | capstone | ai_calls
+ public | idx_ai_calls_created             | index | capstone | ai_calls
+ public | idx_ai_calls_image               | index | capstone | ai_calls
+ public | idx_images_category              | index | capstone | images
+ public | idx_images_queue                 | index | capstone | images
+ public | idx_reviews_suggestion           | index | capstone | reviews
+ public | idx_suggestions_post             | index | capstone | suggestions
+ public | idx_tags_tag                     | index | capstone | tags
+ public | image_vectors_pkey               | index | capstone | image_vectors
+ public | images_filename_key              | index | capstone | images
+ public | images_pkey                      | index | capstone | images
+ public | jobs_pkey                        | index | capstone | jobs
+ public | post_vectors_pkey                | index | capstone | post_vectors
+ public | posts_pkey                       | index | capstone | posts
+ public | reviews_pkey                     | index | capstone | reviews
+ public | suggestions_pkey                 | index | capstone | suggestions
+ public | suggestions_post_id_image_id_key | index | capstone | suggestions
+ public | tags_image_id_tag_key            | index | capstone | tags
+ public | tags_pkey                        | index | capstone | tags
+(19 rows)
+
+```
+
+### 10. API validation and the review workflow
+
+Bad input gets a clean 4xx with a message, never a 500. Then a person rejects the suggestion for the Vulpes vulpes post and approves the one for the fox post, and the inspect endpoint shows the reviews and the reason for the decision.
+
+```
+missing field: POST /posts -> HTTP 400 {'error': 'invalid input', 'problems': ['body: Field required']}
+unknown post: GET /posts/999999/images -> HTTP 404 {'error': 'post 999999 does not exist'}
+post id is not a number: GET /posts/abc/images -> HTTP 400 {'error': 'invalid input', 'problems': ['post_id: Input should be a valid integer, unable to parse string as a
+invalid verdict: POST /suggestions/2/review -> HTTP 400 {'error': "verdict must be 'approved' or 'rejected'"}
+post 3 subject: red fox | its suggestion id: 3
+reject -> 201 {'review_id': 2, 'suggestion_id': 3, 'verdict': 'rejected', 'note': 'demo of the reject path'}
+approve -> 201 {'review_id': 3, 'suggestion_id': 2, 'verdict': 'approved', 'note': 'demo of the approve path'}
+inspect suggestion 2 -> HTTP 200
+{'id': 2, 'post_id': 2, 'rank': 1, 'score': 0.9, 'decision': 'accepted', 'rule': None, 'reason': 'The image features a red fox, which is the exact subject described in the blog post.', 'image': {'id': 32, 'filename': 'fox-05.jpg', 'status': 'done', 'subject': 'red fox', 'category': 'animal', 'caption': 'A red fox stands on a green lawn during a sunny day.', 'confidence': 1.0, 'tags': ['bushy tail', 'daylight', 'pointed ears', 'reddish-orange fur', 'standing on grass']}, 'reviews': [{'id': 3, 'verdict': 'approved', 'note': 'demo of the approve path', 'created_at': '2026-10-30T13:54:58.058475+00:00'}]}
+```
+
+### 11. Evaluation: top-1 precision matches the README
+
+The evaluation script is run on the 13 labeled posts. The precision it prints, the value saved in eval/results.json and the table row in the README are the same number.
+
+```
+OK  post 13: expected fox       got fox-01.jpg
+
+threshold 0.78: 13/13 correct, top-1 precision 1.00
+eval/results.json precision: 1.0
+105:| Final, 13 posts, fresh clone and empty database | 0.78 | 13 of 13 | 1.00 |
+```
+
+### 12. Layered architecture
+
+Routes (main.py) import only the service layer and the error classes. The service imports the repository. The API's SQL lives only in repository.py (connect count: 0 in main.py and service.py). The batch pipeline modules (worker, jobs, vectors, costs) run their own SQL, as the README says.
+
+```
+SQL (connect) in the HTTP and logic layers:
+app/main.py:0
+app/service.py:0
+app/repository.py:19
+
+imports:
+app/main.py:6:from app import runner, service
+app/main.py:7:from app.errors import BadInput, BudgetExceeded, Conflict, NotFound
+app/service.py:3:import app.guard as guard
+app/service.py:4:from app import repository
+app/service.py:5:from app.embed import cosine
+app/service.py:6:from app.engine import find_match
+app/service.py:7:from app.errors import BadInput, Conflict, NotFound
+app/service.py:8:from app.guard import Verdict, check_basic, subject_mismatch_reason
+app/service.py:9:from app.judge import judge_subject
+app/service.py:10:from app.matching import rank_vector
+app/service.py:11:from app.post_tags import PostTags, tag_post
+app/service.py:12:from app.vectors import embed_logged
+app/repository.py:1:from app.db import connect
+app/repository.py:2:from app.post_tags import PostTags
+```
+
+### 13. Idempotency
+
+Running the seed again adds and embeds nothing. Unique constraints stop duplicates: one row per filename, one suggestion per post and image, one tag per image.
+
+```
+new images added: 0
+images embedded: 0
+image statuses: {'done': 39, 'flagged': 3}
+ table_name  |             conname              
+-------------+----------------------------------
+ images      | images_filename_key
+ tags        | tags_image_id_tag_key
+ suggestions | suggestions_post_id_image_id_key
+(3 rows)
+
+```

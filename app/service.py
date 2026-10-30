@@ -128,3 +128,11 @@ def get_job(job_id: int) -> dict:
     if job is None:
         raise NotFound(f"job {job_id} does not exist")
     return job
+
+
+def get_costs(limit: int, offset: int) -> dict:
+    """Totals by purpose and the newest AI calls."""
+    totals = repository.cost_totals()
+    return {"total_cost_usd": float(sum(t["cost_usd"] for t in totals)),
+            "by_purpose": totals,
+            "calls": repository.list_ai_calls(limit, offset)}

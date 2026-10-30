@@ -182,3 +182,34 @@ def finish_job(job_id: int, error: str | None) -> None:
             "UPDATE jobs SET status = %s, error = %s, finished_at = now() WHERE id = %s",
             ("failed" if error else "done", error, job_id),
         )
+
+
+def cost_totals() -> list[dict]:
+    """AI call totals grouped by purpose."""
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT purpose, count(*), coalesce(sum(input_tokens), 0),
+                   coalesce(sum(output_tokens), 0), coalesce(sum(cost_usd), 0)
+            FROM ai_calls GROUP BY purpose ORDER BY purpose
+            """
+        ).fetchall()
+    return [{"purpose": p, "calls": n, "input_tokens": i, "output_tokens": o, "cost_usd": float(c)}
+            for p, n, i, o, c in rows]
+
+
+def list_ai_calls(limit: int, offset: int) -> list[dict]:
+    """The AI call log, newest first."""
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, image_id, purpose, model, input_tokens, output_tokens,
+                   cost_usd, latency_ms, status, error, created_at
+            FROM ai_calls ORDER BY id DESC LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        ).fetchall()
+    return [{"id": r[0], "image_id": r[1], "purpose": r[2], "model": r[3],
+             "input_tokens": r[4], "output_tokens": r[5], "cost_usd": float(r[6]),
+             "latency_ms": r[7], "status": r[8], "error": r[9], "created_at": r[10]}
+            for r in rows]

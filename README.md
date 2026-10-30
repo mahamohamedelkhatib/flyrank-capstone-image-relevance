@@ -47,7 +47,7 @@ flowchart LR
     J --> GEM
 ```
 
-The code has three layers. Routes are in `app/main.py`. The logic is in `service.py`, `engine.py`, `guard.py`, `judge.py`, `worker.py` and `runner.py`. The database code is in `repository.py` and `db.py`. Guard rules 1 to 3 are a small pure module that does not touch the database or the internet, so they are easy to test.
+The code has three layers. Routes are in `app/main.py`. The logic is in `service.py`, `engine.py`, `guard.py`, `judge.py`, `worker.py` and `runner.py`. The database code for the API is in `repository.py` and `db.py`. The batch pipeline (`worker.py`, `jobs.py`, `vectors.py`, `costs.py` and one lookup in `engine.py`) runs its own SQL through `db.py` and does not go through the repository. Guard rules 1 to 3 are a small pure module that does not touch the database or the internet, so they are easy to test.
 
 ## How to run
 
