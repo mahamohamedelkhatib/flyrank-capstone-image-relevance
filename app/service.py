@@ -3,13 +3,11 @@ import os
 import app.guard as guard
 from app import repository
 from app.embed import cosine
-from app.embed import cosine
 from app.engine import find_match
-from app.guard import Verdict, check_basic
-from app.judge import judge_subject
-from app.guard import Verdict, check_basic
-from app.judge import judge_subject
 from app.errors import BadInput, Conflict, NotFound
+from app.guard import Verdict, check_basic
+from app.judge import judge_subject
+from app.matching import rank_vector
 from app.post_tags import PostTags, tag_post
 from app.vectors import embed_logged
 
@@ -32,7 +30,7 @@ def create_post(title: str, body: str) -> dict:
     return {"id": post_id, "title": title, "tags": tags.model_dump()}
 
 
-def get_suggestions(post_id: int, refresh: bool = False) -> dict:
+def get_suggestions(post_id: int, refresh: bool = False, top: int = 10) -> dict:
     """The system's decisions for a post: computed once, then read from the database."""
     post = repository.get_post(post_id)
     if post is None:
@@ -53,6 +51,11 @@ def get_suggestions(post_id: int, refresh: bool = False) -> dict:
         repository.save_suggestions(post_id, items)
         stored = repository.list_suggestions(post_id)
 
+    vector = repository.get_post_vector(post_id)
+    ranking = [
+        {"rank": i, "filename": f, "subject": s, "category": c, "status": st, "score": round(score, 3)}
+        for i, (score, f, s, c, st) in enumerate(rank_vector(vector, top), start=1)
+    ] if vector else []
     accepted = any(s["decision"] == "accepted" for s in stored)
     if accepted:
         message = "match found"
@@ -65,6 +68,7 @@ def get_suggestions(post_id: int, refresh: bool = False) -> dict:
         "decision": "match" if accepted else "no_match",
         "message": message,
         "suggestions": stored,
+        "ranking": ranking,
     }
 
 

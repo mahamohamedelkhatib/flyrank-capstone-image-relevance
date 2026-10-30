@@ -56,9 +56,9 @@ def add_post(payload: PostIn):
 
 
 @app.get("/posts/{post_id}/images")
-def post_images(post_id: int, refresh: bool = False):
+def post_images(post_id: int, refresh: bool = False, top: int = Query(10, ge=1, le=50)):
     """Ranked image suggestions for a post, with the guard's decision and reason for each."""
-    return service.get_suggestions(post_id, refresh)
+    return service.get_suggestions(post_id, refresh, top)
 
 
 class ReviewIn(BaseModel):
