@@ -104,7 +104,7 @@ I wrote 13 posts in `eval/posts.csv`: 10 that have a matching image and 3 that s
 | Tuned, 12 posts | 0.78 | 12 of 12 | 1.00 |
 | Final, 13 posts, fresh clone and empty database | 0.78 | 13 of 13 | 1.00 |
 
-`python3 -m app.evaluate` prints this last number. At 0.80 the dog post failed, because its best image scored 0.798, just under the threshold. In the first measurement every correct match scored 0.798 or higher and the best image of every no-match post scored 0.761 or lower, so I put the threshold at 0.78, inside that gap. In the final run, with the resized photos, the weakest correct match was the dog post at 0.801, and the "Vulpes vulpes" post matched a fox photo at 0.833. The per-post output is in `eval/results.json`.
+`python3 -m app.evaluate` prints this last number. Gemini is a live model, so the exact scores and the judge's wording change slightly between runs (the committed `eval/results.json` is the run the numbers below come from). The result of 13 of 13 was the same in every run I did on the 13 posts. At 0.80 the dog post failed, because its best image scored 0.798, just under the threshold. In the first measurement every correct match scored 0.798 or higher and the best image of every no-match post scored 0.761 or lower, so I put the threshold at 0.78, inside that gap. In the final run, with the resized photos, the weakest correct match was the dog post at 0.801, and the "Vulpes vulpes" post matched a fox photo at 0.833. The per-post output is in `eval/results.json`.
 
 Similarity alone cannot tell a fox from a wolf. For a fox post the first wolf image scored 0.817, only about 0.03 below the weakest fox image. That is why the guard needs a subject check and not only a score.
 
