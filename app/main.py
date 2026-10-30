@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app import runner, service
-from app.errors import BadInput, Conflict, NotFound
+from app.errors import BadInput, BudgetExceeded, Conflict, NotFound
 from app.db import connect
 
 app = FastAPI(title="Image Relevance and Auto-Tagging")
@@ -120,3 +120,8 @@ def job_status(job_id: int):
 @app.exception_handler(Conflict)
 async def handle_conflict(request: Request, exc: Conflict):
     return JSONResponse(status_code=409, content={"error": str(exc)})
+
+
+@app.exception_handler(BudgetExceeded)
+async def handle_budget(request: Request, exc: BudgetExceeded):
+    return JSONResponse(status_code=402, content={"error": str(exc)})

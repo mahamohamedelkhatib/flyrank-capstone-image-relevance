@@ -1,7 +1,7 @@
 import os
 import time
 
-from app.costs import log_call
+from app.costs import ensure_budget, log_call
 from app.db import connect
 from app.embed import embed_text
 
@@ -13,6 +13,7 @@ def image_text(subject: str, caption: str, tags: list[str]) -> str:
 
 def embed_logged(text: str, image_id: int | None = None) -> list[float]:
     """Embed text and write one row to the call log, whether it works or not."""
+    ensure_budget()
     model = os.environ["GEMINI_EMBED_MODEL"]
     tokens = max(1, len(text) // 4)  # Gemini does not report embed tokens: this is an estimate
     started = time.monotonic()

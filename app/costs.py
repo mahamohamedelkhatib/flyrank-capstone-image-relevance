@@ -4,6 +4,7 @@ from decimal import Decimal
 from dotenv import load_dotenv
 
 from app.db import connect
+from app.errors import BudgetExceeded
 
 load_dotenv()
 
@@ -32,3 +33,19 @@ def log_call(*, image_id, purpose, model, input_tokens, output_tokens,
              cost, latency_ms, status, error),
         )
     return cost
+
+
+def total_spent() -> Decimal:
+    """Everything logged so far, in dollars."""
+    with connect() as conn:
+        return conn.execute("SELECT coalesce(sum(cost_usd), 0) FROM ai_calls").fetchone()[0]
+
+
+def ensure_budget() -> None:
+    """Stop before an AI call if the spending cap in .env is already reached."""
+    limit = os.environ.get("MAX_BUDGET_USD")
+    if not limit:
+        return
+    spent = total_spent()
+    if spent >= Decimal(limit):
+        raise BudgetExceeded(f"budget of ${limit} is reached (spent ${spent:.4f}), no more AI calls")

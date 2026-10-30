@@ -6,7 +6,7 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from app.costs import log_call
+from app.costs import ensure_budget, log_call
 from app.gemini import BASE_URL
 
 load_dotenv()
@@ -31,6 +31,7 @@ class SubjectJudgement(BaseModel):
 
 def judge_subject(post_subject: str, image_subject: str, caption: str) -> SubjectJudgement:
     """Ask Gemini whether the post and the image are about the same kind of thing. Logged."""
+    ensure_budget()
     model = os.environ["GEMINI_VISION_MODEL"]
     prompt = PROMPT.format(post_subject=post_subject, image_subject=image_subject, caption=caption)
     started = time.monotonic()

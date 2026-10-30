@@ -4,7 +4,7 @@ import sys
 import time
 from pathlib import Path
 
-from app.costs import log_call
+from app.costs import ensure_budget, log_call
 from app.db import connect
 from app.gemini import call_gemini
 from app.jobs import claim_next, save_failure, save_success
@@ -41,6 +41,7 @@ def _log(image_id: int, usage: dict, started: float, status: str, error: str | N
 
 def process_one() -> str | None:
     """Tag one pending image. Returns a log line, or None if nothing was due."""
+    ensure_budget()
     with connect() as conn:
         claimed = claim_next(conn)
     if claimed is None:

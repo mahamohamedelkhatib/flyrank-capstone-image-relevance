@@ -6,7 +6,7 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from app.costs import log_call
+from app.costs import ensure_budget, log_call
 from app.gemini import BASE_URL
 from app.schemas import Category
 
@@ -31,6 +31,7 @@ class PostTags(BaseModel):
 
 def tag_post(text: str) -> PostTags:
     """Ask Gemini what a post is about. Every call is logged."""
+    ensure_budget()
     model = os.environ["GEMINI_VISION_MODEL"]
     started = time.monotonic()
     usage: dict = {}

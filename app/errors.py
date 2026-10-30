@@ -8,3 +8,7 @@ class BadInput(Exception):
 
 class Conflict(Exception):
     """The request clashes with the current state, like a job already running (becomes a 409)."""
+
+
+class BudgetExceeded(Exception):
+    """The spending cap in .env is reached, so no more AI calls are made (becomes a 402)."""
