@@ -1,6 +1,6 @@
 import app.guard as guard
 from app.db import connect
-from app.guard import Verdict, check_basic
+from app.guard import Verdict, check_basic, subject_mismatch_reason
 from app.judge import judge_subject
 from app.matching import rank_vector
 from app.post_tags import PostTags, tag_post
@@ -38,7 +38,8 @@ def find_match(post: PostTags, query: list[float], include: tuple = (), exclude:
                 return {**result, "decision": "match", "message": "match found",
                         "match": {"filename": filename, "score": round(score, 3),
                                   "subject": subject, "why": judgement.reason}}
-            verdict = Verdict(False, "subject_mismatch", judgement.reason)
+            verdict = Verdict(False, "subject_mismatch",
+                              subject_mismatch_reason(post.subject, subject, judgement.reason))
         result["rejected"].append({"filename": filename, "score": round(score, 3),
                                    "rule": verdict.rule, "reason": verdict.reason})
 

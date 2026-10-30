@@ -25,10 +25,16 @@ def check_basic(post: PostTags, image: dict, similarity: float) -> Verdict:
     # Rule 2: same category?
     if post.category != image["category"]:
         return Verdict(False, "category_mismatch",
-                       f"post is about {post.category} ({post.subject}), "
+                       f"category mismatch: post is about {post.category} ({post.subject}), "
                        f"image shows {image['category']} ({image['subject']})")
     # Rule 3: similar enough?
     if similarity < MIN_SIMILARITY:
         return Verdict(False, "low_similarity",
                        f"similarity {similarity:.2f} is below {MIN_SIMILARITY}")
     return Verdict(True)
+
+
+def subject_mismatch_reason(post_subject: str, image_subject: str, judge_reason: str) -> str:
+    """Explanation for rule 4: the post and the image are about different kinds of things."""
+    return (f"category mismatch: the post is about '{post_subject}' but the image shows "
+            f"'{image_subject}'. {judge_reason}")

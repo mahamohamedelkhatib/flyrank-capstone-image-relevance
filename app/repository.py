@@ -125,24 +125,6 @@ def get_image_vector(image_id: int) -> list[float] | None:
     return row[0] if row else None
 
 
-def get_image(image_id: int) -> dict | None:
-    with connect() as conn:
-        row = conn.execute(
-            "SELECT id, filename, status, subject, category, caption, confidence "
-            "FROM images WHERE id = %s",
-            (image_id,),
-        ).fetchone()
-    if row is None:
-        return None
-    return dict(zip(("id", "filename", "status", "subject", "category", "caption", "confidence"), row))
-
-
-def get_image_vector(image_id: int) -> list[float] | None:
-    with connect() as conn:
-        row = conn.execute("SELECT vector FROM image_vectors WHERE image_id = %s", (image_id,)).fetchone()
-    return row[0] if row else None
-
-
 def count_pending_images() -> int:
     with connect() as conn:
         return conn.execute("SELECT count(*) FROM images WHERE status = 'pending'").fetchone()[0]
