@@ -15,5 +15,19 @@ services:
       interval: 5s
       retries: 10
 
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://capstone:capstone@db:5432/capstone
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./eval:/app/eval
+
 volumes:
   pgdata:
