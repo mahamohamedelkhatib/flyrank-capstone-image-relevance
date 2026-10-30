@@ -220,6 +220,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 .env
-data/images/*
 
 .DS_Store
